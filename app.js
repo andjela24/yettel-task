@@ -1,7 +1,15 @@
 require("dotenv").config({ path: `${process.cwd()}/.env` });
 const express = require("express");
-const authRouter = require("./route/authRoute");
+const authRouter = require("./routes/authRoute");
+const taskRouter = require("./routes/taskRoute");
+const userRouter = require("./routes/userRoute");
+const catchAsync = require("./services/catchAsync");
+const AppError = require("./services/appError");
+const globalErrorHandler = require("./controllers/errorController");
+
 const app = express();
+
+app.use(express.json());
 
 app.get("/", (req, res) => {
   res.status(200).json({
@@ -10,16 +18,20 @@ app.get("/", (req, res) => {
   });
 });
 
-// all routes are be here
 app.use("/api/v1/auth", authRouter);
-app.use("*", (req, res, next) => {
-  res.status(404).json({
-    staus: "Fail",
-    message: "Route not found",
-  });
-});
+app.use("/api/v1/tasks", taskRouter);
+app.use("/api/v1/users", userRouter);
+
+app.use(
+  "*",
+  catchAsync(async (req, res, next) => {
+    throw new AppError("This is error.", 404);
+  })
+);
+
+app.use(globalErrorHandler);
 
 const PORT = process.env.APP_PORT || 4000;
 app.listen(PORT, () => {
-  console.log("Server up and running on port", PORT);
+  console.log("Server up and running");
 });
