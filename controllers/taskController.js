@@ -1,5 +1,5 @@
-const task = require("../db/models/task");
-const user = require("../db/models/user");
+const task = require("../models/task");
+const user = require("../models/user");
 const AppError = require("../services/appError");
 const catchAsync = require("../services/catchAsync");
 
@@ -50,7 +50,6 @@ const getAllTask = catchAsync(async (req, res, next) => {
   });
 });
 
-// May need to improve
 const getTaskById = catchAsync(async (req, res, next) => {
   const taskId = req.params.id;
   const userId = req.user.id;
@@ -58,7 +57,7 @@ const getTaskById = catchAsync(async (req, res, next) => {
 
   const result = await task.findByPk(taskId, { include: user });
   if (!result) {
-    return next(new AppError("Task not found.", 400));
+    return next(new AppError("Task not found.", 404));
   }
 
   if (role === "BASIC" && result.createdBy !== userId) {
@@ -74,13 +73,20 @@ const getTaskById = catchAsync(async (req, res, next) => {
 
 const updateTask = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
-  const taskId = req.params.id;
+  const taskId = parseInt(req.params.id);
   const body = req.body;
+  const isBasicUser = req.user.role === "BASIC";
 
-  const condition = role === "BASIC" ? { createdBy: userId } : {};
+  if (isNaN(taskId)) {
+    return next(new AppError("Invalid task ID.", 400));
+  }
+  const condition = isBasicUser
+    ? { id: taskId, createdBy: userId }
+    : { id: taskId };
+  // const condition = body.role === "BASIC" ? { createdBy: userId } : {};
 
   const result = await task.findOne({
-    where: { id: taskId, condition },
+    where: { ...condition },
   });
 
   if (!result) {
@@ -97,11 +103,8 @@ const updateTask = catchAsync(async (req, res, next) => {
   });
 });
 
-//Only ADMIN can delete task
 const deleteTask = catchAsync(async (req, res, next) => {
-  const userId = req.user.id;
   const taskId = req.params.id;
-  const body = req.body;
 
   const result = await task.findOne({
     where: { id: taskId },

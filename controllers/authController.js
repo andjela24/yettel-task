@@ -1,4 +1,4 @@
-const user = require("../db/models/user");
+const user = require("../models/user");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const catchAsync = require("../services/catchAsync");
@@ -12,9 +12,8 @@ const generateToken = (payload) => {
 
 const signup = async (req, res, next) => {
   const body = req.body;
-  //If needed
   if (!["BASIC", "ADMIN"].includes(body.role)) {
-    throw new AppError("Invalid role.", 400);
+    throw new AppError("Invalid role.", 401);
   }
   const newUser = await user.create({
     firstName: body.firstName,

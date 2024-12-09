@@ -1,9 +1,8 @@
 const { Sequelize } = require("sequelize");
 const bcrypt = require("bcryptjs");
 const AppError = require("../services/appError");
-const user = require("../db/models/user");
+const user = require("../models/user");
 const catchAsync = require("../services/catchAsync");
-
 const updateUser = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
   const role = req.user.role;
@@ -42,11 +41,11 @@ const updateUser = catchAsync(async (req, res, next) => {
     body.password = await bcrypt.hash(body.password, 10);
   }
 
-  result.firstName = body.firstName;
-  result.lastName = body.lastName;
-  result.username = body.username;
-  result.email = body.email;
-  result.password = body.password;
+  Object.keys(body).forEach((key) => {
+    if (body[key] !== undefined) {
+      result[key] = body[key];
+    }
+  });
 
   const updatedResult = await result.save();
 

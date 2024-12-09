@@ -1,14 +1,14 @@
 require("dotenv").config({ path: `${process.cwd()}/.env` });
 const express = require("express");
+const { swaggerSpec, swaggerUi } = require("./swagger");
 const authRouter = require("./routes/authRoute");
 const taskRouter = require("./routes/taskRoute");
 const userRouter = require("./routes/userRoute");
 const catchAsync = require("./services/catchAsync");
 const AppError = require("./services/appError");
-const globalErrorHandler = require("./controllers/errorController");
+const errorMiddleware = require("./middleware/errorMiddleware");
 
 const app = express();
-
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -18,6 +18,8 @@ app.get("/", (req, res) => {
   });
 });
 
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/users", userRouter);
@@ -25,13 +27,16 @@ app.use("/api/v1/users", userRouter);
 app.use(
   "*",
   catchAsync(async (req, res, next) => {
-    throw new AppError("This is error.", 404);
+    throw new AppError(`Cannot find ${req.originalUrl} on this server!`, 404);
   })
 );
 
-app.use(globalErrorHandler);
+app.use(errorMiddleware);
 
-const PORT = process.env.APP_PORT || 4000;
-app.listen(PORT, () => {
-  console.log("Server up and running");
-});
+if (process.env.NODE_ENV !== "test") {
+  const PORT = process.env.APP_PORT || 4000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+module.exports = app;

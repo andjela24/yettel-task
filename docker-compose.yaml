@@ -10,7 +10,7 @@ services:
       - "13000:3000"
     depends_on:
       - db
-    command: ["npm", "run", "start:migrate"]
+    command: ["npm", "run", "start:migrate:seed"]
 
   db:
     image: postgres:latest
